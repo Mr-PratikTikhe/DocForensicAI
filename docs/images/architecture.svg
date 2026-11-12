@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="450" viewBox="0 0 1060 450" role="img" aria-labelledby="title desc">
+  <title id="title">DocForensic AI application architecture</title>
+  <desc id="desc">Browser UI connects to Django views and document services, with SQLite storage and optional Gemini API.</desc>
+  <defs><marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 10 5 0 10z" fill="#A9A69E"/></marker></defs>
+  <rect width="1060" height="450" rx="22" fill="#252522"/>
+  <text x="36" y="48" fill="#EEECE6" font-family="Segoe UI,Arial,sans-serif" font-size="20" font-weight="700">Application architecture</text>
+  <text x="36" y="72" fill="#A9A69E" font-family="Segoe UI,Arial,sans-serif" font-size="12">A Django app coordinates document processing, retrieval, and grounded responses.</text>
+  <g font-family="Segoe UI,Arial,sans-serif">
+    <rect x="40" y="144" width="215" height="206" rx="16" fill="#30302C" stroke="#5A574F"/>
+    <text x="62" y="177" fill="#D8CBB3" font-size="12" font-weight="700" letter-spacing="1">CLIENT</text>
+    <text x="62" y="207" fill="#EEECE6" font-size="17" font-weight="700">Browser UI</text>
+    <text x="62" y="236" fill="#C0BEB7" font-size="12">Document library</text>
+    <text x="62" y="259" fill="#C0BEB7" font-size="12">PDF viewer + citations</text>
+    <text x="62" y="282" fill="#C0BEB7" font-size="12">Chat + Markdown renderer</text>
+    <text x="62" y="305" fill="#C0BEB7" font-size="12">Interactive quiz</text>
+    <path d="M261 247h47" stroke="#A9A69E" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="264" y="231" fill="#96948D" font-size="10">JSON / HTTP</text>
+    <rect x="316" y="120" width="270" height="254" rx="16" fill="#30302C" stroke="#D8CBB3" stroke-opacity=".55"/>
+    <text x="340" y="154" fill="#D8CBB3" font-size="12" font-weight="700" letter-spacing="1">APPLICATION SERVER</text>
+    <text x="340" y="184" fill="#EEECE6" font-size="17" font-weight="700">Django</text>
+    <rect x="340" y="201" width="220" height="42" rx="9" fill="#3A3934"/><text x="354" y="227" fill="#E7E0D3" font-size="12">Views and API routes</text>
+    <rect x="340" y="252" width="220" height="42" rx="9" fill="#3A3934"/><text x="354" y="278" fill="#E7E0D3" font-size="12">Extraction and chunking</text>
+    <rect x="340" y="303" width="220" height="42" rx="9" fill="#3A3934"/><text x="354" y="329" fill="#E7E0D3" font-size="12">RAG and quiz validation</text>
+    <path d="M592 202h47" stroke="#A9A69E" stroke-width="2" marker-end="url(#arr)"/>
+    <path d="M592 294h47" stroke="#A9A69E" stroke-width="2" marker-end="url(#arr)"/>
+    <rect x="648" y="126" width="172" height="111" rx="15" fill="#30302C" stroke="#5A574F"/>
+    <text x="670" y="160" fill="#D8CBB3" font-size="11" font-weight="700">PERSISTENCE</text>
+    <text x="670" y="190" fill="#EEECE6" font-size="16" font-weight="700">SQLite</text>
+    <text x="670" y="213" fill="#A9A69E" font-size="11">Chunks · vectors · metadata</text>
+    <rect x="648" y="264" width="172" height="111" rx="15" fill="#30302C" stroke="#5A574F"/>
+    <text x="670" y="298" fill="#D8CBB3" font-size="11" font-weight="700">LOCAL FILES</text>
+    <text x="670" y="328" fill="#EEECE6" font-size="16" font-weight="700">Media storage</text>
+    <text x="670" y="351" fill="#A9A69E" font-size="11">Uploaded PDFs and TXT</text>
+    <path d="M826 202h45" stroke="#A9A69E" stroke-width="2" marker-end="url(#arr)"/>
+    <path d="M826 319h45" stroke="#A9A69E" stroke-width="2" marker-end="url(#arr)"/>
+    <rect x="880" y="172" width="145" height="174" rx="16" fill="#3A3934" stroke="#D8CBB3" stroke-opacity=".55"/>
+    <text x="900" y="208" fill="#D8CBB3" font-size="11" font-weight="700">OPTIONAL AI</text>
+    <text x="900" y="239" fill="#EEECE6" font-size="16" font-weight="700">Gemini API</text>
+    <text x="900" y="269" fill="#C0BEB7" font-size="11">Embeddings</text>
+    <text x="900" y="290" fill="#C0BEB7" font-size="11">Grounded answers</text>
+    <text x="900" y="311" fill="#C0BEB7" font-size="11">Structured quizzes</text>
+    <text x="900" y="329" fill="#96948D" font-size="10">Local fallback available</text>
+  </g>
+  <text x="40" y="416" fill="#96948D" font-family="Segoe UI,Arial,sans-serif" font-size="11">Deployment currently assumes a persistent application host and durable storage. See deployment notes before using Vercel.</text>
+</svg>

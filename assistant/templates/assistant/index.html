@@ -1,0 +1,467 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="DocForensic — AI-Powered Forensic Document Intelligence and Retrieval Assistant">
+  <title>DocForensic AI · Document Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github-dark.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
+  <link rel="stylesheet" href="{% static 'assistant/css/app.css' %}?v=3.2">
+</head>
+<body class="docforensic-theme">
+  <form class="d-none">{% csrf_token %}</form>
+
+  <div class="app-layout">
+    <!-- Left Navigation Sidebar -->
+    <aside class="sidebar-nav">
+      <div class="sidebar-brand">
+        <div class="brand-logo" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none">
+            <path d="M6 24L16 6L26 24" stroke="#D8CBB3" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 18H22" stroke="#D8CBB3" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="16" cy="18" r="3" fill="#D8CBB3" />
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">DocForensic</span>
+          <span class="brand-sub">AI</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button id="navDashboard" class="nav-item active" type="button" title="Forensic Dashboard">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+          </svg>
+          <span>Dashboard</span>
+        </button>
+
+        <section class="sidebar-documents" aria-labelledby="sidebarDocumentsTitle">
+          <div class="sidebar-documents-heading">
+            <span id="sidebarDocumentsTitle">Documents</span>
+            <span id="sidebarDocCount" class="nav-badge">0</span>
+          </div>
+          <div id="sidebarDocumentList" class="sidebar-document-list" aria-label="Your documents"></div>
+        </section>
+      </nav>
+
+      <div class="sidebar-footer">
+        <label for="fileInputSidebar" class="upload-btn-sidebar" title="Upload Document">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <span>Upload File</span>
+        </label>
+        <input id="fileInputSidebar" type="file" accept=".pdf,.txt,application/pdf,text/plain" hidden>
+
+        <div class="system-status-chip">
+          <span class="status-indicator-dot"></span>
+          <span class="status-label">{% if gemini_enabled %}Gemini RAG Active{% else %}Local Forensic Mode{% endif %}</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center Document Workspace -->
+    <main class="main-workspace">
+      <!-- Breadcrumb Bar -->
+      <header class="workspace-header">
+        <div class="breadcrumb-group">
+          <button id="backBtn" class="breadcrumb-btn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>DocForensic</span>
+          </button>
+          <div class="workspace-mode-tag">Forensic Intelligence Studio</div>
+        </div>
+
+        <div class="header-actions">
+          <button id="quickUploadTrigger" class="action-icon-btn" type="button" title="Upload New File">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </button>
+          <button id="openDocsModalBtn" class="action-icon-btn" type="button" title="Document Registry">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="workspace-scrollable">
+        <section id="uploadProgress" class="upload-progress d-none" role="status" aria-live="polite">
+          <div class="upload-progress-heading"><strong id="uploadProgressLabel">Preparing document…</strong><span id="uploadProgressPercent">0%</span></div>
+          <div class="upload-progress-track"><div id="uploadProgressBar" class="upload-progress-fill"></div></div>
+        </section>
+        <!-- Document Title Banner -->
+        <section class="doc-title-card">
+          <h1 id="activeDocTitle" class="doc-headline">Q3 Technical Report: Cloud Security and Compliance</h1>
+          <div class="doc-submeta">
+            <span id="activeDocPageCount">Page 1 of 28</span>
+            <span class="meta-separator">•</span>
+            <span id="activeDocId">Doc ID: DF-98124</span>
+            <span class="meta-separator">•</span>
+            <span id="activeDocDate">Uploaded: 2026-11-12</span>
+            <span class="meta-separator">•</span>
+            <span id="activeDocScopeIndicator" class="scope-pill">1 Selected for Query</span>
+          </div>
+        </section>
+
+        <!-- Document Metadata Collapsible Card -->
+        <section class="forensic-card collapsible-card">
+          <div class="card-header-row" data-toggle="collapse" data-target="#metadataCollapse">
+            <h2 class="card-heading">Document Metadata</h2>
+            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div id="metadataCollapse" class="card-body-collapse">
+            <div class="metadata-grid">
+              <div class="meta-item">
+                <span class="meta-label">Size</span>
+                <strong id="metaSize" class="meta-value">1.2 MB</strong>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Type</span>
+                <strong id="metaType" class="meta-value">PDF</strong>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Pages</span>
+                <strong id="metaPages" class="meta-value">28</strong>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Status</span>
+                <span id="metaStatus" class="meta-status-pill indexed">Indexed</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Document Processing Stats Collapsible Card -->
+        <section class="forensic-card collapsible-card">
+          <div class="card-header-row" data-toggle="collapse" data-target="#statsCollapse">
+            <h2 class="card-heading">Document Processing Stats</h2>
+            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div id="statsCollapse" class="card-body-collapse">
+            <div class="stats-grid">
+              <div class="stat-widget">
+                <div class="stat-top">
+                  <span class="stat-title">Pages Processed</span>
+                  <span id="statPagesProcessed" class="stat-metric">0 / 0</span>
+                </div>
+                <p class="stat-description">Pages successfully read from this document.</p>
+              </div>
+
+              <div class="stat-widget">
+                <div class="stat-top">
+                  <span class="stat-title">Text Extraction</span>
+                  <span id="statTextExtraction" class="stat-metric">Pending</span>
+                </div>
+                <p class="stat-description">Confirms readable text was extracted for search.</p>
+              </div>
+
+              <div class="stat-widget">
+                <div class="stat-top">
+                  <span class="stat-title">Searchable Chunks</span>
+                  <span id="statChunkCount" class="stat-metric">0</span>
+                </div>
+                <p class="stat-description">Text passages created for focused document retrieval.</p>
+                <div class="progress-bar-container">
+                  <div id="statProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <div class="stat-widget">
+                <div class="stat-top">
+                  <span class="stat-title">Search Index</span>
+                  <span id="statIndexStatus" class="stat-metric">Pending</span>
+                </div>
+                <p class="stat-description">Ready means questions can retrieve matching passages.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Document Viewer Box -->
+        <section class="document-viewer-card">
+          <!-- Viewer Top Toolbar -->
+          <div class="viewer-toolbar">
+            <div class="viewer-left-controls">
+              <span id="viewerPageIndicator" class="viewer-page-label">Page 1 of 28</span>
+            </div>
+            <div class="viewer-right-controls">
+              <button id="zoomOutBtn" class="viewer-tool-btn" type="button" title="Zoom Out">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+              <button id="zoomInBtn" class="viewer-tool-btn" type="button" title="Zoom In">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+              <button id="searchViewerBtn" class="viewer-tool-btn" type="button" title="Search In Document">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </button>
+              <button id="downloadDocBtn" class="viewer-tool-btn" type="button" title="Download Document">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+              </button>
+              <label for="viewerReplaceInput" class="viewer-tool-btn" title="Upload or Replace Document">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+              </label>
+              <input id="viewerReplaceInput" type="file" accept=".pdf,.txt,application/pdf,text/plain" hidden>
+            </div>
+          </div>
+
+          <!-- Viewer Main Pages Grid -->
+          <div id="viewerCanvas" class="viewer-canvas">
+            <!-- Rendered Multi-Page Grid or Dropzone -->
+            <div id="pagesGrid" class="pages-grid">
+              <!-- Dynamically populated page cards -->
+            </div>
+
+            <!-- Upload Drop Zone (Shown when no document or drag over) -->
+            <div id="viewerDropzone" class="viewer-dropzone d-none">
+              <div class="dropzone-glow"></div>
+              <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="#D8CBB3" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="12" y1="18" x2="12" y2="12"></line>
+                <line x1="9" y1="15" x2="12" y2="12"></line>
+                <line x1="15" y1="15" x2="12" y2="12"></line>
+              </svg>
+              <h3>Drag & Drop Documents for Forensic Analysis</h3>
+              <p>Supports text-based PDF and TXT files up to 15 MB</p>
+              <label for="viewerFileSelect" class="browse-files-btn">Browse Files</label>
+              <input id="viewerFileSelect" type="file" accept=".pdf,.txt,application/pdf,text/plain" hidden>
+            </div>
+          </div>
+        </section>
+
+
+      </div>
+    </main>
+
+    <!-- Right Side: Document Intelligence Panel -->
+    <aside class="intelligence-panel">
+      <!-- Intelligence Panel Header -->
+      <header class="intelligence-header">
+        <h2 class="intelligence-title">Document Intelligence</h2>
+        <div class="intelligence-actions">
+          <button id="historyBtn" class="intel-tool-btn" type="button" title="Conversation History">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </button>
+          <button id="clearChatBtn" class="intel-tool-btn" type="button" title="Clear Conversation">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="1"></circle>
+              <circle cx="19" cy="12" r="1"></circle>
+              <circle cx="5" cy="12" r="1"></circle>
+            </svg>
+          </button>
+          <button id="toggleCollapsePanelBtn" class="intel-tool-btn" type="button" title="Collapse Panel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Messages Stream -->
+      <div id="chatStream" class="chat-stream">
+      </div>
+
+      <template id="featureCarouselTemplate">
+        <section class="feature-carousel" aria-label="Document research tools">
+          <div class="feature-carousel-intro">
+            <span class="feature-kicker">YOUR RESEARCH WORKSPACE</span>
+            <h3>What would you like to do?</h3>
+            <p>Choose a tool to start with your selected documents.</p>
+          </div>
+          <div class="feature-slides">
+            <article class="feature-slide is-active" data-feature-slide aria-hidden="false">
+              <span class="feature-slide-number">01 / 03 · ANALYZE</span>
+              <div class="feature-illustration compare-illustration" aria-hidden="true"><span>Paper A</span><i></i><span>Paper B</span></div>
+              <h2>Compare your documents</h2>
+              <p>Find agreements, differences, and conflicting claims across selected papers, with page citations.</p>
+              <div id="featureCompareDocuments" class="feature-document-choices" aria-label="Choose documents to compare"></div>
+              <button class="feature-action-primary" type="button" data-feature-mode="compare" data-feature-label="Compare selected papers" data-feature-prompt="Compare the selected documents using only the passages retrieved from them." data-min-documents="2">Compare selected papers <span aria-hidden="true">→</span></button>
+            </article>
+            <article class="feature-slide" data-feature-slide aria-hidden="true">
+              <span class="feature-slide-number">02 / 03 · STUDY</span>
+              <div class="feature-illustration study-illustration" aria-hidden="true"><span>Q</span><span>A</span><span>✓</span></div>
+              <h2>Learn from your documents</h2>
+              <p>Generate a quiz, make flashcards, or get a plain language explanation grounded in your sources.</p>
+              <div class="feature-action-group">
+                <button class="feature-action-primary" type="button" data-feature-mode="quiz" data-feature-label="Create a quiz from my documents" data-feature-prompt="Create a quiz based only on the selected document passages.">Create a quiz <span aria-hidden="true">→</span></button>
+                <button class="feature-action-secondary" type="button" data-feature-mode="flashcards" data-feature-label="Make flashcards from my documents" data-feature-prompt="Create study flashcards based only on the selected document passages.">Make flashcards</button>
+                <button class="feature-action-secondary" type="button" data-feature-mode="explain" data-feature-label="Explain key concepts from my documents" data-feature-prompt="Explain the key concepts based only on the selected document passages.">Explain key concepts</button>
+              </div>
+            </article>
+            <article class="feature-slide" data-feature-slide aria-hidden="true">
+              <span class="feature-slide-number">03 / 03 · SYNTHESIZE</span>
+              <div class="feature-illustration synthesis-illustration" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+              <h2>Connect the research</h2>
+              <p>Draft a literature review, surface research gaps, or map recurring topics across your selected papers.</p>
+              <div class="feature-action-group">
+                <button class="feature-action-primary" type="button" data-feature-mode="literature_review" data-feature-label="Draft a literature review from my documents" data-feature-prompt="Write a literature review based only on the selected document passages.">Draft a literature review <span aria-hidden="true">→</span></button>
+                <button class="feature-action-secondary" type="button" data-feature-mode="research_gaps" data-feature-label="Find research gaps and contradictions" data-feature-prompt="Find research gaps and contradictions based only on the selected document passages.">Find gaps & contradictions</button>
+                <button class="feature-action-secondary" type="button" data-feature-mode="knowledge_map" data-feature-label="Map connected topics in my documents" data-feature-prompt="Map connected topics based only on the selected document passages.">Map connected topics</button>
+              </div>
+            </article>
+          </div>
+          <div class="feature-carousel-footer"><span>Choose documents in Compare, then start an action.</span><div class="feature-carousel-dots" aria-label="Choose a research tool"><button type="button" class="active" data-feature-slide-to="0" aria-label="Compare documents"></button><button type="button" data-feature-slide-to="1" aria-label="Study companion"></button><button type="button" data-feature-slide-to="2" aria-label="Research synthesis"></button></div></div>
+        </section>
+      </template>
+
+      <!-- Bottom Chat Composer -->
+      <footer class="intelligence-composer">
+        <form id="forensicChatForm" class="composer-form">
+          <div class="composer-input-row">
+            <textarea id="forensicQueryInput" rows="1" placeholder="Type a message..." maxlength="2000"></textarea>
+          </div>
+
+          <div class="composer-toolbar-row">
+            <div class="composer-left-tools">
+              <label for="chatFileInput" class="composer-tool-btn" title="Attach file">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                </svg>
+              </label>
+              <input id="chatFileInput" type="file" accept=".pdf,.txt,application/pdf,text/plain" hidden>
+
+              <button id="docRefQuickBtn" class="composer-tool-btn" type="button" title="Select scope documents">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+              </button>
+
+              <button id="codeSuggestBtn" class="composer-tool-btn" type="button" title="Query templates">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="16 18 22 12 16 6"></polyline>
+                  <polyline points="8 6 2 12 8 18"></polyline>
+                </svg>
+              </button>
+            </div>
+
+            <button id="sendQueryBtn" class="electric-send-btn" type="submit" aria-label="Send Query">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+        </form>
+      </footer>
+    </aside>
+  </div>
+
+  <!-- "My Documents" Registry Drawer/Modal -->
+  <div id="documentsModal" class="forensic-modal d-none" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog-panel">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#D8CBB3" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+          <h2>Document Registry</h2>
+        </div>
+        <button id="closeModalBtn" class="close-modal-btn" type="button" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-scope-controls">
+          <span id="modalSelectedCount">0 documents selected</span>
+          <button id="modalSelectAllBtn" class="modal-text-btn" type="button">Select All</button>
+        </div>
+
+        <div id="modalDocumentsList" class="modal-docs-list">
+          <!-- Populated dynamically -->
+        </div>
+
+        <label for="modalUploadInput" class="modal-dropzone">
+          <input id="modalUploadInput" type="file" accept=".pdf,.txt,application/pdf,text/plain" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#D8CBB3" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <strong>Upload additional documents</strong>
+          <small>PDF or TXT up to 15 MB</small>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="forensicToast" class="forensic-toast" role="alert"></div>
+
+  <div id="quizSetupModal" class="forensic-modal d-none" aria-hidden="true">
+    <div class="modal-backdrop" data-quiz-close></div>
+    <section class="modal-dialog-panel quiz-setup-panel" role="dialog" aria-modal="true" aria-labelledby="quizSetupTitle">
+      <header class="modal-header">
+        <div class="modal-title-wrap"><h2 id="quizSetupTitle">Build a document quiz</h2></div>
+        <button class="close-modal-btn" type="button" data-quiz-close aria-label="Close quiz setup">×</button>
+      </header>
+      <form id="quizSetupForm" class="quiz-setup-form">
+        <label class="quiz-form-field"><span>Topic or section <small>(optional)</small></span><input id="quizTopicInput" maxlength="250" placeholder="For example, Euclidean geometry"></label>
+        <div class="quiz-form-row">
+          <label class="quiz-form-field"><span>Difficulty</span><select id="quizDifficulty"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select></label>
+          <label class="quiz-form-field"><span>Questions</span><select id="quizQuestionCount"><option>3</option><option selected>5</option><option>8</option><option>10</option></select></label>
+        </div>
+        <p id="quizScopeNote" class="quiz-scope-note"></p>
+        <button class="feature-action-primary" type="submit">Generate grounded quiz <span aria-hidden="true">→</span></button>
+      </form>
+    </section>
+  </div>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/lib/common.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js"></script>
+  <script defer src="{% static 'assistant/js/app.js' %}?v=3.2"></script>
+</body>
+</html>

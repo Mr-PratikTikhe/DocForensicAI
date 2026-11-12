@@ -1,0 +1,7 @@
+# DocuMind runtime dependencies
+# Python 3.12 or newer is required by the pinned Django release.
+
+Django==6.0.9
+pypdf==6.21.2
+google-genai==1.75.0
+python-dotenv==1.2.4

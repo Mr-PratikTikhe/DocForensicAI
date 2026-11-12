@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="260" viewBox="0 0 1120 260" role="img" aria-labelledby="title desc">
+  <title id="title">DocForensic AI retrieval-augmented generation flow</title>
+  <desc id="desc">Six steps from document selection through retrieval, evidence checking, grounded Gemini or local generation, and cited response.</desc>
+  <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 9 4.5 0 9z" fill="#A9A69E"/></marker></defs>
+  <rect width="1120" height="260" rx="20" fill="#252522"/>
+  <text x="34" y="43" fill="#EEECE6" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="700">Ground every answer in selected document evidence</text>
+  <g font-family="Segoe UI,Arial,sans-serif">
+    <g><rect x="34" y="83" width="150" height="118" rx="13" fill="#30302C" stroke="#5A574F"/><circle cx="57" cy="108" r="13" fill="#D8CBB3"/><text x="53" y="113" fill="#252522" font-size="11" font-weight="700">1</text><text x="51" y="146" fill="#F1EEE8" font-size="13" font-weight="700">Select documents</text><text x="51" y="168" fill="#A9A69E" font-size="10">Choose query scope</text></g>
+    <path d="M190 142h27" stroke="#A9A69E" stroke-width="2" marker-end="url(#arrow)"/>
+    <g><rect x="226" y="83" width="150" height="118" rx="13" fill="#30302C" stroke="#5A574F"/><circle cx="249" cy="108" r="13" fill="#D8CBB3"/><text x="245" y="113" fill="#252522" font-size="11" font-weight="700">2</text><text x="243" y="146" fill="#F1EEE8" font-size="13" font-weight="700">Retrieve chunks</text><text x="243" y="168" fill="#A9A69E" font-size="10">Rank by similarity</text></g>
+    <path d="M382 142h27" stroke="#A9A69E" stroke-width="2" marker-end="url(#arrow)"/>
+    <g><rect x="418" y="83" width="150" height="118" rx="13" fill="#30302C" stroke="#5A574F"/><circle cx="441" cy="108" r="13" fill="#D8CBB3"/><text x="437" y="113" fill="#252522" font-size="11" font-weight="700">3</text><text x="435" y="146" fill="#F1EEE8" font-size="13" font-weight="700">Check evidence</text><text x="435" y="168" fill="#A9A69E" font-size="10">Apply relevance gate</text></g>
+    <path d="M574 142h27" stroke="#A9A69E" stroke-width="2" marker-end="url(#arrow)"/>
+    <g><rect x="610" y="83" width="150" height="118" rx="13" fill="#30302C" stroke="#5A574F"/><circle cx="633" cy="108" r="13" fill="#D8CBB3"/><text x="629" y="113" fill="#252522" font-size="11" font-weight="700">4</text><text x="627" y="146" fill="#F1EEE8" font-size="13" font-weight="700">Generate answer</text><text x="627" y="168" fill="#A9A69E" font-size="10">Gemini or local mode</text></g>
+    <path d="M766 142h27" stroke="#A9A69E" stroke-width="2" marker-end="url(#arrow)"/>
+    <g><rect x="802" y="83" width="135" height="118" rx="13" fill="#30302C" stroke="#5A574F"/><circle cx="825" cy="108" r="13" fill="#D8CBB3"/><text x="821" y="113" fill="#252522" font-size="11" font-weight="700">5</text><text x="819" y="146" fill="#F1EEE8" font-size="13" font-weight="700">Attach sources</text><text x="819" y="168" fill="#A9A69E" font-size="10">Document and page</text></g>
+    <path d="M943 142h27" stroke="#A9A69E" stroke-width="2" marker-end="url(#arrow)"/>
+    <g><rect x="979" y="83" width="108" height="118" rx="13" fill="#3A3934" stroke="#D8CBB3" stroke-opacity=".65"/><circle cx="1002" cy="108" r="13" fill="#D8CBB3"/><text x="998" y="113" fill="#252522" font-size="11" font-weight="700">6</text><text x="995" y="146" fill="#F1EEE8" font-size="13" font-weight="700">Show result</text><text x="995" y="168" fill="#C0BEB7" font-size="10">Cited response</text></g>
+  </g>
+</svg>
