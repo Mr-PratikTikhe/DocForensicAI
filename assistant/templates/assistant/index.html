@@ -11,9 +11,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github-dark.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
-  <link rel="stylesheet" href="{% static 'assistant/css/app.css' %}?v=3.2">
+  <link rel="stylesheet" href="{% static 'assistant/css/app.css' %}?v=3.3">
 </head>
-<body class="docforensic-theme">
+<body class="docforensic-theme{% if demo_mode %} demo-mode{% endif %}" data-demo-mode="{{ demo_mode|yesno:'true,false' }}">
   <form class="d-none">{% csrf_token %}</form>
 
   <div class="app-layout">
@@ -54,7 +54,7 @@
       </nav>
 
       <div class="sidebar-footer">
-        <label for="fileInputSidebar" class="upload-btn-sidebar" title="Upload Document">
+        {% if not demo_mode %}<label for="fileInputSidebar" class="upload-btn-sidebar" title="Upload Document">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="17 8 12 3 7 8"></polyline>
@@ -62,7 +62,7 @@
           </svg>
           <span>Upload File</span>
         </label>
-        <input id="fileInputSidebar" type="file" accept=".pdf,.txt,application/pdf,text/plain" hidden>
+        <input id="fileInputSidebar" type="file" accept=".pdf,.txt,application/pdf,text/plain" hidden>{% endif %}
 
         <div class="system-status-chip">
           <span class="status-indicator-dot"></span>
@@ -86,7 +86,7 @@
           <div class="workspace-mode-tag">Forensic Intelligence Studio</div>
         </div>
 
-        <div class="header-actions">
+        {% if not demo_mode %}<div class="header-actions">
           <button id="quickUploadTrigger" class="action-icon-btn" type="button" title="Upload New File">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -100,8 +100,10 @@
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
             </svg>
           </button>
-        </div>
+        </div>{% endif %}
       </header>
+
+      {% if demo_mode %}<div class="demo-notice"><strong>Public demo</strong><span>Synthetic sample document · read-only · 20 shared questions per day</span><a href="/">Private workspace</a></div>{% endif %}
 
       <div class="workspace-scrollable">
         <section id="uploadProgress" class="upload-progress d-none" role="status" aria-live="polite">
@@ -462,6 +464,6 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js"></script>
-  <script defer src="{% static 'assistant/js/app.js' %}?v=3.2"></script>
+  <script defer src="{% static 'assistant/js/app.js' %}?v=3.3"></script>
 </body>
 </html>

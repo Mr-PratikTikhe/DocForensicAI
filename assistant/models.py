@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 
 class Document(models.Model):
@@ -16,12 +17,30 @@ class Document(models.Model):
     chunk_count = models.PositiveIntegerField(default=0)
     error_message = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_demo = models.BooleanField(default=False, db_index=True)
 
     class Meta:
         ordering = ["-created_at"]
 
     def __str__(self):
         return self.name
+
+
+class DemoDailyUsage(models.Model):
+    day = models.DateField(unique=True)
+    question_count = models.PositiveSmallIntegerField(default=0)
+
+    @classmethod
+    def reserve_question(cls, daily_limit=20):
+        from django.db import transaction
+
+        with transaction.atomic():
+            usage, _ = cls.objects.select_for_update().get_or_create(day=timezone.localdate())
+            if usage.question_count >= daily_limit:
+                return False, 0
+            usage.question_count += 1
+            usage.save(update_fields=["question_count"])
+            return True, daily_limit - usage.question_count
 
 
 class DocumentChunk(models.Model):

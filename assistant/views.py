@@ -7,7 +7,7 @@ from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from .models import Document
+from .models import DemoDailyUsage, Document
 from .services.processing import process_document
 from .services.rag import answer_question
 from .services.learning import QuizGenerationError, generate_quiz
@@ -48,12 +48,23 @@ def site_logout(request):
 
 @require_GET
 def dashboard(request):
-    return render(request, "assistant/index.html", {"gemini_enabled": bool(settings.GEMINI_API_KEY)})
+    return render(request, "assistant/index.html", {"gemini_enabled": bool(settings.GEMINI_API_KEY), "demo_mode": False})
+
+
+@require_GET
+def demo_dashboard(request):
+    return render(request, "assistant/index.html", {"gemini_enabled": bool(settings.GEMINI_API_KEY), "demo_mode": True})
 
 
 @require_GET
 def documents_api(request):
     return JsonResponse({"documents": [_serialize_document(document) for document in Document.objects.all()]})
+
+
+@require_GET
+def demo_documents_api(request):
+    documents = Document.objects.filter(is_demo=True, status=Document.Status.READY)
+    return JsonResponse({"documents": [_serialize_document(document, demo=True) for document in documents]})
 
 
 @require_GET
@@ -63,6 +74,17 @@ def document_download(request, document_id):
     content_type = "application/pdf" if document.file_type == "pdf" else "text/plain; charset=utf-8"
     response = FileResponse(document.file, as_attachment=False, filename=document.name, content_type=content_type)
     response["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+@require_GET
+def demo_document_download(request, document_id):
+    document = get_object_or_404(Document, pk=document_id, is_demo=True, status=Document.Status.READY)
+    document.file.open("rb")
+    content_type = "application/pdf" if document.file_type == "pdf" else "text/plain; charset=utf-8"
+    response = FileResponse(document.file, as_attachment=False, filename=document.name, content_type=content_type)
+    response["X-Content-Type-Options"] = "nosniff"
+    response["Cache-Control"] = "public, max-age=300"
     return response
 
 
@@ -117,6 +139,18 @@ def document_chunks(request, document_id):
     })
 
 
+@require_GET
+def demo_document_chunks(request, document_id):
+    document = get_object_or_404(Document, pk=document_id, is_demo=True, status=Document.Status.READY)
+    return JsonResponse({
+        "document": _serialize_document(document, demo=True),
+        "chunks": [
+            {"id": chunk.id, "chunk_index": chunk.chunk_index, "page_number": chunk.page_number or 1, "text": chunk.text}
+            for chunk in document.chunks.order_by("chunk_index")
+        ],
+    })
+
+
 @require_POST
 def ask_question(request):
     try:
@@ -145,6 +179,35 @@ def ask_question(request):
         result = answer_question(question, document_ids or None, feature_mode=feature_mode)
     except RuntimeError as exc:
         return JsonResponse({"error": str(exc)}, status=503)
+    return JsonResponse(result)
+
+
+@require_POST
+def demo_ask_question(request):
+    try:
+        payload = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON request."}, status=400)
+
+    question = str(payload.get("question", "")).strip()
+    if len(question) < 3:
+        return JsonResponse({"error": "Enter a complete question."}, status=400)
+    if len(question) > 500:
+        return JsonResponse({"error": "Demo questions must be 500 characters or fewer."}, status=400)
+
+    demo_document = Document.objects.filter(is_demo=True, status=Document.Status.READY).first()
+    if not demo_document:
+        return JsonResponse({"error": "The public demo is being prepared. Please check back soon."}, status=503)
+
+    allowed, remaining = DemoDailyUsage.reserve_question()
+    if not allowed:
+        return JsonResponse({"error": "The public demo has reached today's shared question limit. Please try again tomorrow."}, status=429)
+
+    try:
+        result = answer_question(question, [demo_document.id], feature_mode=None)
+    except RuntimeError as exc:
+        return JsonResponse({"error": str(exc), "remaining_today": remaining}, status=503)
+    result["demo_remaining_today"] = remaining
     return JsonResponse(result)
 
 
@@ -181,11 +244,11 @@ def quiz_api(request):
         return JsonResponse({"error": str(exc)}, status=503)
 
 
-def _serialize_document(document: Document) -> dict:
+def _serialize_document(document: Document, demo: bool = False) -> dict:
     return {
         "id": document.id,
         "name": document.name,
-        "file_url": f"/api/documents/{document.id}/download/" if document.file else None,
+        "file_url": f"/api/{'demo/' if demo else ''}documents/{document.id}/download/" if document.file else None,
         "file_type": document.file_type.upper(),
         "file_size": document.file_size,
         "status": document.status,

@@ -37,6 +37,7 @@ DocForensic AI is a Django document intelligence app with retrieval-augmented ge
 - **Upload progress:** show progress while a document is uploaded and indexed.
 - **Local fallback:** use deterministic local hash-vector embeddings and extractive answers when Gemini is not configured.
 - **Responsive workspace:** navigate the document library, page viewer, metadata, processing stats, and chat from one interface.
+- **Public portfolio demo:** try a synthetic sample report without a password. Demo access is read-only and limited to 20 shared questions per day; private documents and write APIs remain password-gated.
 
 ## How it works
 
@@ -276,6 +277,8 @@ Set these project environment variables in Vercel:
 The server upload route is limited to 4 MB by default on Vercel because Vercel Functions cap request bodies at 4.5 MB. Set `MAX_UPLOAD_SIZE_MB` no higher than `4` until browser-to-Blob uploads are implemented. Local development keeps its 15 MB default.
 
 After connecting the database, run `python manage.py migrate` against its production `DATABASE_URL` before opening the beta. Static files are collected automatically by Vercel's Django support. See [Vercel's Django guide](https://vercel.com/docs/frameworks/full-stack/django), [Vercel Blob private storage](https://vercel.com/docs/vercel-blob/private-storage), and [Vercel storage overview](https://vercel.com/docs/storage).
+
+To refresh the public sample after deployment, run `python manage.py seed_demo_document` with the production database and Blob credentials. To change the private-beta password, update `SITE_ACCESS_PASSWORD` in Vercel Project Settings → Environment Variables for Production, save, then redeploy. Update your ignored local `.env.beta-access` note separately if you want it to match; Django does not load that file.
 
 For production beyond this shared-password beta, add individual accounts and per-user document permissions before allowing separate groups of users to share the service.
 

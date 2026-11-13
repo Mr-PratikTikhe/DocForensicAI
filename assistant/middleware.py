@@ -19,7 +19,12 @@ class SitePasswordMiddleware:
         login_path = reverse("assistant:site_login")
         logout_path = reverse("assistant:site_logout")
         static_prefix = "/" + settings.STATIC_URL.lstrip("/")
-        if request.path in {login_path, logout_path} or request.path.startswith(static_prefix):
+        if (
+            request.path in {login_path, logout_path}
+            or request.path == "/demo/"
+            or request.path.startswith("/api/demo/")
+            or request.path.startswith(static_prefix)
+        ):
             return self.get_response(request)
         if request.session.get(self.SESSION_KEY):
             return self.get_response(request)

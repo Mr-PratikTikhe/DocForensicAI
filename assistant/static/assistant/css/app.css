@@ -1683,3 +1683,20 @@ button, input, textarea {
 .assistant-answer .hljs-keyword, .assistant-answer .hljs-selector-tag, .assistant-answer .hljs-literal, .assistant-answer .hljs-built_in, .assistant-answer .hljs-type { color: #D8CBB3; }
 .assistant-answer .hljs-string, .assistant-answer .hljs-attr, .assistant-answer .hljs-title, .assistant-answer .hljs-number, .assistant-answer .hljs-symbol { color: #C8C5BD; }
 .assistant-answer .hljs-comment, .assistant-answer .hljs-quote, .assistant-answer .hljs-meta { color: #96948D; font-style: italic; }
+.demo-notice { display: flex; align-items: center; gap: 12px; margin: 14px 28px 0; padding: 11px 14px; border: 1px solid rgba(216,203,179,.35); border-radius: 10px; background: rgba(216,203,179,.07); color: #d8cbb3; font-size: 12px; }
+.demo-notice strong { color: #f3eadb; }
+.demo-notice span { color: #ada99f; }
+.demo-notice a { margin-left: auto; color: #e9dfcf; white-space: nowrap; }
+.demo-mode .upload-btn-sidebar,
+.demo-mode #quickUploadTrigger,
+.demo-mode #openDocsModalBtn,
+.demo-mode .modal-dropzone,
+.demo-mode label[for="chatFileInput"],
+.demo-mode label[for="viewerReplaceInput"],
+.demo-mode label[for="viewerFileSelect"],
+.demo-mode .sidebar-delete-document-btn,
+.demo-mode .delete-doc-btn,
+.demo-mode #quizSetupModal,
+.demo-mode [data-feature-mode="quiz"] { display: none !important; }
+.demo-mode #uploadProgress { display: none !important; }
+@media (max-width: 700px) { .demo-notice { flex-wrap: wrap; margin-inline: 12px; } .demo-notice a { margin-left: 0; } }

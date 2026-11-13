@@ -12,6 +12,11 @@ const state = {
   asking: false,
   zoomLevel: 1.0,
 };
+const demoMode = document.body.dataset.demoMode === "true";
+
+function scopedApiUrl(url) {
+  return demoMode ? url.replace(/^\/api\//, "/api/demo/") : url;
+}
 
 // DOM Elements - Shell & Nav
 const sidebarDocCount = document.getElementById("sidebarDocCount");
@@ -90,7 +95,7 @@ const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]")?.value ||
 // API Helpers
 // ============================================================================
 async function api(url, options = {}) {
-  const response = await fetch(url, {
+  const response = await fetch(scopedApiUrl(url), {
     ...options,
     headers: {
       "X-CSRFToken": csrfToken,
@@ -256,6 +261,7 @@ function renderSidebarDocumentList() {
       await loadActiveDocumentChunks(doc.id);
     });
 
+    if (!demoMode) {
     const deleteButton = document.createElement("button");
     deleteButton.type = "button";
     deleteButton.className = "sidebar-delete-document-btn";
@@ -275,6 +281,9 @@ function renderSidebarDocumentList() {
       }
     });
     row.append(checkbox, item, deleteButton);
+    } else {
+      row.append(checkbox, item);
+    }
     sidebarDocumentList.appendChild(row);
   });
 }
@@ -396,6 +405,7 @@ function applyZoom() {
 // File Upload Operations
 // ============================================================================
 async function handleFileUpload(file) {
+  if (demoMode) return showToast("The public demo is read-only.");
   if (!file) return;
   const ext = file.name.split(".").pop().toLowerCase();
   if (!["pdf", "txt"].includes(ext)) {
@@ -414,7 +424,7 @@ async function handleFileUpload(file) {
   try {
     const payload = await new Promise((resolve, reject) => {
       const request = new XMLHttpRequest();
-      request.open("POST", "/api/documents/upload/");
+      request.open("POST", scopedApiUrl("/api/documents/upload/"));
       request.setRequestHeader("X-CSRFToken", csrfToken);
       request.upload.addEventListener("progress", (event) => {
         if (event.lengthComputable) setUploadProgress(Math.min(15, event.loaded / event.total * 15), "Uploading document…");
@@ -552,7 +562,8 @@ function renderModalDocumentList() {
       }
     });
 
-    row.append(checkbox, typePill, infoCol, viewBtn, delBtn);
+    row.append(checkbox, typePill, infoCol, viewBtn);
+    if (!demoMode) row.append(delBtn);
     modalDocumentsList.appendChild(row);
   });
 }
@@ -596,7 +607,7 @@ forensicChatForm?.addEventListener("submit", async (e) => {
     const payload = await api("/api/ask/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: feature?.prompt || query, document_ids: docIds, feature_mode: feature?.mode || null }),
+      body: JSON.stringify({ question: feature?.prompt || query, document_ids: docIds, feature_mode: demoMode ? null : (feature?.mode || null) }),
     });
 
     thinkingElem.remove();
