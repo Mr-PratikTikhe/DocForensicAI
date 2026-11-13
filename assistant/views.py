@@ -196,8 +196,22 @@ def demo_ask_question(request):
     if len(question) > 500:
         return JsonResponse({"error": "Demo questions must be 500 characters or fewer."}, status=400)
 
-    demo_document = Document.objects.filter(is_demo=True, status=Document.Status.READY).first()
-    if not demo_document:
+    raw_ids = payload.get("document_ids") or []
+    if not isinstance(raw_ids, list):
+        return JsonResponse({"error": "document_ids must be a list."}, status=400)
+    try:
+        document_ids = list(dict.fromkeys(int(value) for value in raw_ids))
+    except (TypeError, ValueError):
+        return JsonResponse({"error": "Each document ID must be a number."}, status=400)
+    if not document_ids:
+        return JsonResponse({"error": "Select at least one demo document."}, status=400)
+
+    demo_documents = list(Document.objects.filter(
+        is_demo=True, status=Document.Status.READY, id__in=document_ids
+    ).order_by("id"))
+    if len(demo_documents) != len(document_ids):
+        return JsonResponse({"error": "Choose only ready documents from the public demo."}, status=400)
+    if not demo_documents:
         return JsonResponse({"error": "The public demo is being prepared. Please check back soon."}, status=503)
 
     allowed, remaining = DemoDailyUsage.reserve_question()
@@ -205,7 +219,7 @@ def demo_ask_question(request):
         return JsonResponse({"error": "The public demo has reached today's shared question limit. Please try again tomorrow."}, status=429)
 
     try:
-        result = answer_question(question, [demo_document.id], feature_mode=None)
+        result = answer_question(question, [document.id for document in demo_documents], feature_mode=None)
     except RuntimeError as exc:
         return JsonResponse({"error": str(exc), "remaining_today": remaining}, status=503)
     result["demo_remaining_today"] = remaining
