@@ -1,9 +1,10 @@
+import hmac
 import json
 from pathlib import Path
 
 from django.conf import settings
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.http import FileResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from .models import Document
@@ -17,6 +18,34 @@ FEATURE_MODES = {
 }
 
 
+@require_http_methods(["GET", "POST"])
+def site_login(request):
+    if not settings.SITE_ACCESS_PASSWORD:
+        return render(request, "assistant/login.html", {"error": "Beta access is not configured."}, status=503)
+    if request.method == "POST":
+        submitted = request.POST.get("password", "")
+        if hmac.compare_digest(submitted, settings.SITE_ACCESS_PASSWORD):
+            request.session["site_password_verified"] = True
+            next_url = request.POST.get("next", "")
+            from django.utils.http import url_has_allowed_host_and_scheme
+            if url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+                return redirect(next_url)
+            return redirect("assistant:dashboard")
+        return render(
+            request,
+            "assistant/login.html",
+            {"error": "That password did not match.", "next": request.POST.get("next", "")},
+            status=401,
+        )
+    return render(request, "assistant/login.html", {"next": request.GET.get("next", "")})
+
+
+@require_POST
+def site_logout(request):
+    request.session.pop("site_password_verified", None)
+    return redirect("assistant:site_login")
+
+
 @require_GET
 def dashboard(request):
     return render(request, "assistant/index.html", {"gemini_enabled": bool(settings.GEMINI_API_KEY)})
@@ -25,6 +54,16 @@ def dashboard(request):
 @require_GET
 def documents_api(request):
     return JsonResponse({"documents": [_serialize_document(document) for document in Document.objects.all()]})
+
+
+@require_GET
+def document_download(request, document_id):
+    document = get_object_or_404(Document, pk=document_id)
+    document.file.open("rb")
+    content_type = "application/pdf" if document.file_type == "pdf" else "text/plain; charset=utf-8"
+    response = FileResponse(document.file, as_attachment=False, filename=document.name, content_type=content_type)
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 @require_POST
@@ -146,7 +185,7 @@ def _serialize_document(document: Document) -> dict:
     return {
         "id": document.id,
         "name": document.name,
-        "file_url": document.file.url if document.file else None,
+        "file_url": f"/api/documents/{document.id}/download/" if document.file else None,
         "file_type": document.file_type.upper(),
         "file_size": document.file_size,
         "status": document.status,

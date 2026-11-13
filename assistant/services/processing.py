@@ -8,7 +8,11 @@ from .extraction import chunk_sections, extract_sections
 
 def process_document(document: Document) -> Document:
     try:
-        sections = extract_sections(document.file.path, document.file_type)
+        document.file.open("rb")
+        try:
+            sections = extract_sections(document.file, document.file_type)
+        finally:
+            document.file.close()
         chunks = chunk_sections(sections)
         if not chunks:
             raise ValueError("The document did not contain enough readable text to index.")

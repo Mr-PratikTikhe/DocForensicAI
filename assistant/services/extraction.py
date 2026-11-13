@@ -1,6 +1,5 @@
 import re
 from dataclasses import dataclass
-from pathlib import Path
 
 from pypdf import PdfReader
 
@@ -11,7 +10,7 @@ class TextSection:
     page_number: int | None
 
 
-def extract_sections(file_path: str, file_type: str) -> list[TextSection]:
+def extract_sections(file_path, file_type: str) -> list[TextSection]:
     if file_type == "pdf":
         reader = PdfReader(file_path)
         sections = [
@@ -19,7 +18,12 @@ def extract_sections(file_path: str, file_type: str) -> list[TextSection]:
             for index, page in enumerate(reader.pages, start=1)
         ]
     elif file_type == "txt":
-        raw = Path(file_path).read_bytes()
+        if hasattr(file_path, "read"):
+            file_path.seek(0)
+            raw = file_path.read()
+        else:
+            with open(file_path, "rb") as source:
+                raw = source.read()
         try:
             text = raw.decode("utf-8")
         except UnicodeDecodeError:

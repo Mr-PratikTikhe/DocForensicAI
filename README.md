@@ -255,16 +255,29 @@ The tests cover text chunking and page metadata, relevant and unrelated retrieva
 - Keep your Gemini API key private and configure it through environment variables.
 - Markdown HTML is sanitized before being rendered in the chat. Mermaid runs with strict security settings.
 - Document selection is passed explicitly to retrieval; uploaded documents are not sent to Gemini as a whole. Retrieved passages are included for generation.
-- This prototype does not implement per-user authentication or access controls. Do not expose documents to untrusted users or deploy it with sensitive files until user isolation and authentication are added.
-- The local SQLite database and uploaded files are local development storage, not durable multi-instance production storage.
+- The beta uses a shared password gate. Everyone with the password sees the same document library and can upload or delete documents; per-user isolation is not implemented.
+- The local SQLite database and uploaded files are for development only. Vercel production requires persistent PostgreSQL and private object storage.
 
 ## Deployment notes
 
-This repository is prepared for a later deployment review, but it is **not yet configured for Vercel production**. The app currently uses Django’s WSGI project, SQLite, and local media storage. Serverless instances do not provide durable local database or uploaded-file storage, so deploying this configuration as-is can lose data or fail when instances scale or restart.
+Vercel recognizes this Django project from `manage.py` and `WSGI_APPLICATION`. Before the first production deployment, connect a persistent PostgreSQL database and a **private** Vercel Blob store. The app deliberately refuses to start in production if either is missing; the serverless filesystem and SQLite database are temporary and must not hold the document library.
 
-Before a Vercel launch, verify the current Django/Python runtime support and configure durable managed database and object storage, production secrets, allowed hosts, static-file delivery, upload limits, and request/background processing behavior. The Gemini key must be added as a server-side Vercel environment variable; never expose it in client-side code. We’ll handle those deployment changes as the next step.
+Set these project environment variables in Vercel:
 
-For production use, also set `DJANGO_DEBUG=false`, configure HTTPS and secure cookies, use a strong `DJANGO_SECRET_KEY`, and implement authentication and per-user document permissions.
+- `DJANGO_SECRET_KEY`: a new, random secret used only by the deployed site.
+- `DJANGO_DEBUG=false`
+- `DJANGO_ALLOWED_HOSTS`: the Vercel domain, such as `docforensicai.vercel.app`.
+- `DJANGO_CSRF_TRUSTED_ORIGINS`: the matching HTTPS origin, such as `https://docforensicai.vercel.app`.
+- `SITE_ACCESS_PASSWORD`: the shared private-beta password. Everyone who has it shares the same document library and can upload or delete documents.
+- `DATABASE_URL`: the PostgreSQL provider's connection URL.
+- `GEMINI_API_KEY`: add this yourself in Vercel project settings; do not commit it.
+- `BLOB_READ_WRITE_TOKEN`: injected when the private Blob store is connected.
+
+The server upload route is limited to 4 MB by default on Vercel because Vercel Functions cap request bodies at 4.5 MB. Set `MAX_UPLOAD_SIZE_MB` no higher than `4` until browser-to-Blob uploads are implemented. Local development keeps its 15 MB default.
+
+After connecting the database, run `python manage.py migrate` against its production `DATABASE_URL` before opening the beta. Static files are collected automatically by Vercel's Django support. See [Vercel's Django guide](https://vercel.com/docs/frameworks/full-stack/django), [Vercel Blob private storage](https://vercel.com/docs/vercel-blob/private-storage), and [Vercel storage overview](https://vercel.com/docs/storage).
+
+For production beyond this shared-password beta, add individual accounts and per-user document permissions before allowing separate groups of users to share the service.
 
 ## Troubleshooting
 
