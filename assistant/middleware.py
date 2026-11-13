@@ -1,13 +1,18 @@
+import hmac
+
 from django.conf import settings
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
+from django.utils.crypto import salted_hmac
+
+
+def current_password_fingerprint():
+    return salted_hmac("assistant.site_access", settings.SITE_ACCESS_PASSWORD).hexdigest()
 
 
 class SitePasswordMiddleware:
     """Require a shared beta password before serving app or API content."""
-
-    SESSION_KEY = "site_password_verified"
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -26,8 +31,11 @@ class SitePasswordMiddleware:
             or request.path.startswith(static_prefix)
         ):
             return self.get_response(request)
-        if request.session.get(self.SESSION_KEY):
+        session_fingerprint = request.session.get("site_password_fingerprint", "")
+        expected_fingerprint = current_password_fingerprint()
+        if session_fingerprint and hmac.compare_digest(session_fingerprint, expected_fingerprint):
             return self.get_response(request)
+        request.session.pop("site_password_fingerprint", None)
 
         if request.path.startswith("/api/"):
             return JsonResponse({"error": "Enter the beta password to continue."}, status=401)

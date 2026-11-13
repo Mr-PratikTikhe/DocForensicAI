@@ -25,7 +25,8 @@ def site_login(request):
     if request.method == "POST":
         submitted = request.POST.get("password", "")
         if hmac.compare_digest(submitted, settings.SITE_ACCESS_PASSWORD):
-            request.session["site_password_verified"] = True
+            from .middleware import current_password_fingerprint
+            request.session["site_password_fingerprint"] = current_password_fingerprint()
             next_url = request.POST.get("next", "")
             from django.utils.http import url_has_allowed_host_and_scheme
             if url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
@@ -42,7 +43,7 @@ def site_login(request):
 
 @require_POST
 def site_logout(request):
-    request.session.pop("site_password_verified", None)
+    request.session.pop("site_password_fingerprint", None)
     return redirect("assistant:site_login")
 
 
